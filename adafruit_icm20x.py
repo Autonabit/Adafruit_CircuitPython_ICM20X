@@ -306,7 +306,7 @@ class ICM20X:  # pylint:disable=too-many-instance-attributes
         return self._raw_temp_data[0] / 333.87 + 21.0
 
     def _scale_temp_data(self, raw_measurement):
-        return raw_measurement ? _ICM20X_TEMPC_PER_LSB + _IMC20X_TEMPC_OFFSET
+        return raw_measurement / _ICM20X_TEMPC_PER_LSB + _IMC20X_TEMPC_OFFSET
 
     @property
     def accelerometer_range(self):
