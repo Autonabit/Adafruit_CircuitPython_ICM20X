@@ -51,8 +51,10 @@ _ICM20X_REG_BANK_SEL = 0x7F  # register bank selection register
 _ICM20X_PWR_MGMT_1 = 0x06  # primary power management register
 _ICM20X_ACCEL_XOUT_H = 0x2D  # first byte of accel data
 _ICM20X_GYRO_XOUT_H = 0x33  # first byte of accel data
+_ICM20X_TEMP_OUT_H = 0x39  # first byte of temperature data
 _ICM20X_I2C_MST_STATUS = 0x17  # I2C Microcontroller Status bits
 _ICM20948_EXT_SLV_SENS_DATA_00 = 0x3B
+
 
 _ICM20X_USER_CTRL = 0x03  # User Control Reg. Includes I2C Microcontroller
 _ICM20X_LP_CONFIG = 0x05  # Low Power config
@@ -88,6 +90,9 @@ _ICM20X_I2C_SLV4_DI = 0x17  # Sets I2C microcontroller bus sensor 4 data in
 
 _ICM20X_UT_PER_LSB = 0.15  # mag data LSB value (fixed)
 _ICM20X_RAD_PER_DEG = 0.017453293  # Degrees/s to rad/s multiplier
+
+_ICM20X_TEMPC_PER_LSB = 333.87 # temp data LSB value
+_IMC20X_TEMPC_OFFSET = 21.0 # reference temperature measured from
 
 G_TO_ACCEL = 9.80665
 
@@ -152,10 +157,12 @@ class ICM20X:  # pylint:disable=too-many-instance-attributes
     _reset = RWBit(_ICM20X_PWR_MGMT_1, 7)
     _sleep_reg = RWBit(_ICM20X_PWR_MGMT_1, 6)
     _low_power_en = RWBit(_ICM20X_PWR_MGMT_1, 5)
+    _temp_dis = RWBit(_ICM20X_PWR_MGMT_1, 3)
     _clock_source = RWBits(3, _ICM20X_PWR_MGMT_1, 0)
 
     _raw_accel_data = Struct(_ICM20X_ACCEL_XOUT_H, ">hhh")  # ds says LE :|
     _raw_gyro_data = Struct(_ICM20X_GYRO_XOUT_H, ">hhh")
+    _raw_temp_data = Struct(_ICM20X_TEMP_OUT_H, ">h")
 
     _lp_config_reg = UnaryStruct(_ICM20X_LP_CONFIG, ">B")
 
@@ -293,6 +300,13 @@ class ICM20X:  # pylint:disable=too-many-instance-attributes
         return (
             raw_measurement / GyroRange.lsb[self._cached_gyro_range]
         ) * _ICM20X_RAD_PER_DEG
+
+    @property
+    def temperature(self):
+        return self._raw_temp_data[0] / 333.87 + 21.0
+
+    def _scale_temp_data(self, raw_measurement):
+        return raw_measurement ? _ICM20X_TEMPC_PER_LSB + _IMC20X_TEMPC_OFFSET
 
     @property
     def accelerometer_range(self):
